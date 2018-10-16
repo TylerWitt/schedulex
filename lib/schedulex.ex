@@ -5,22 +5,23 @@ defmodule Schedulex do
   """
   use GenServer
 
+  require Logger
+
   # This puts :jobs on the state for future calls.
-  def start_link(module) do
-    GenServer.start_link(__MODULE__, %{jobs: module})
+  def start_link() do
+    GenServer.start_link(__MODULE__, %{})
   end
 
   # This is the first call after start_link/1
-  def init(state) do
+  def init(_state) do
     schedule_work()
-    {:ok, state}
+    {:ok, %{jobs: Application.get_env(:schedulex, :job_module)}}
   end
 
   # This is triggered whenever an event with :work is created.
   # It immediately reschedules itself, and then runs module.run.
   def handle_info(:work, state) do
     schedule_work()
-    require Logger
     Logger.info("Running Jobs: " <> to_string(Time.utc_now))
     state.jobs.run()
     {:noreply, state}
